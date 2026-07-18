@@ -65,6 +65,8 @@ set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) RDP_pipeli
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) RDP.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) DDR3Mux.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) SDRamMux.vhd ]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) AT24C01.vhd ]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) Aleck64.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) statemanager.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) savestates.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) savemem.vhd ]

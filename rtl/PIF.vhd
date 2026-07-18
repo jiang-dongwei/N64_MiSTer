@@ -68,6 +68,8 @@ entity pif is
       eeprom_in            : in  std_logic_vector(31 downto 0);
       eeprom_out           : out std_logic_vector(31 downto 0);
       eeprom_change        : out std_logic := '0';
+      eeprom_init          : in  std_logic := '0';
+      eeprom_loaded        : in  std_logic := '0';
       
       SS_reset             : in  std_logic;
       loading_savestate    : in  std_logic;
@@ -330,7 +332,9 @@ begin
          
          if (second_ena = '1' and INITDONE = '0') then
             INITDONE     <= '1';
-            EEPROMState  <= EEPROM_CLEAR;
+            if (eeprom_loaded = '0') then
+               EEPROMState <= EEPROM_CLEAR;
+            end if;
          end if;
          
          if (slowcnt > 0) then
@@ -349,6 +353,15 @@ begin
                end if;
          
          end case;  
+
+         -- Each MRA starts with an erased device. If Main replays an existing
+         -- NVRAM file, abort that erase before its first complete word write.
+         if (eeprom_init = '1') then
+            EEPROMState       <= EEPROM_CLEAR;
+            eeprom_addr_clear <= (others => '0');
+         elsif (eeprom_loaded = '1') then
+            EEPROMState <= EEPROM_IDLE;
+         end if;
          
          if (reset = '1' or softreset = '1') then
             
@@ -973,9 +986,12 @@ begin
    
    eeprom_change <= eeprom_wren_b;
    
-   eeprom_addr_a <= eeprom_addr_clear when (EEPROMState = EEPROM_CLEAR) else eeprom_addr;
-   eeprom_wren_a <= '1'               when (EEPROMState = EEPROM_CLEAR) else eeprom_wren;
-   eeprom_in_a   <= x"FFFFFFFF"       when (EEPROMState = EEPROM_CLEAR) else eeprom_in;
+   eeprom_addr_a <= eeprom_addr when (eeprom_loaded = '1') else
+                    eeprom_addr_clear when (EEPROMState = EEPROM_CLEAR) else eeprom_addr;
+   eeprom_wren_a <= eeprom_wren when (eeprom_loaded = '1') else
+                    '1' when (EEPROMState = EEPROM_CLEAR) else eeprom_wren;
+   eeprom_in_a   <= eeprom_in when (eeprom_loaded = '1') else
+                    x"FFFFFFFF" when (EEPROMState = EEPROM_CLEAR) else eeprom_in;
 
 --##############################################################
 --############################### CIC 6105

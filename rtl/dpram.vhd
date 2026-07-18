@@ -270,6 +270,8 @@ entity dpram_dif_be is
 		data_width_a    : integer := 8;
 		addr_width_b    : integer := 8;
 		data_width_b    : integer := 8;
+		numwords_a      : integer := 0;
+		numwords_b      : integer := 0;
 		width_byteena_a : integer := 1;
 		width_byteena_b : integer := 1
 	);
@@ -298,6 +300,17 @@ end entity;
 
 ARCHITECTURE SYN OF dpram_dif_be IS
 
+	function resolved_numwords(configured : integer; address_width : integer) return integer is
+	begin
+		if configured = 0 then
+			return 2**address_width;
+		end if;
+		return configured;
+	end function;
+
+	constant actual_numwords_a : integer := resolved_numwords(numwords_a, addr_width_a);
+	constant actual_numwords_b : integer := resolved_numwords(numwords_b, addr_width_b);
+
 	signal q0 : std_logic_vector((data_width_a - 1) downto 0);
 	signal q1 : std_logic_vector((data_width_b - 1) downto 0);
 
@@ -321,8 +334,8 @@ BEGIN
 		indata_reg_b => "CLOCK1",                                               
 		intended_device_family => "Cyclone V",                                  
 		lpm_type => "altsyncram",                                               
-		numwords_a => 2**addr_width_a,                                          
-		numwords_b => 2**addr_width_b,                                          
+		numwords_a => actual_numwords_a,
+		numwords_b => actual_numwords_b,
 		operation_mode => "BIDIR_DUAL_PORT",                                    
 		outdata_aclr_a => "NONE",                                               
 		outdata_aclr_b => "NONE",                                               

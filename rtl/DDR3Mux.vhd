@@ -56,6 +56,7 @@ entity DDR3Mux is
       clk2xIndex       : in  std_logic;
       
       RAMSIZE8         : in  std_logic;
+      ALECK64          : in  std_logic;
       slow_in          : in  std_logic_vector(3 downto 0); 
       
       error            : out std_logic;
@@ -135,6 +136,7 @@ architecture arch of DDR3Mux is
    signal lastReadReq   : std_logic;
    
    signal RAMSIZE8_2x   : std_logic;
+   signal ALECK64_2x    : std_logic;
    
    type tdone is array(0 to DDR3MUXCOUNT - 1) of std_logic_vector(1 downto 0);
    signal done    : tdone := (others => (others => '0'));
@@ -220,6 +222,7 @@ begin
          ddr3_DOUT_READY_1 <= ddr3_DOUT_READY;
          
          RAMSIZE8_2x <= RAMSIZE8;
+         ALECK64_2x  <= ALECK64;
       
          if (ddr3_BUSY = '0') then
             ddr3_WE <= '0';
@@ -322,7 +325,9 @@ begin
                      end if;
                      
                      -- writing/reading behind ram
-                     if ((RAMSIZE8_2x = '1' and rdram_address(activeIndex)(27 downto 23) > 0) or (RAMSIZE8_2x = '0' and rdram_address(activeIndex)(27 downto 22) > 0)) then
+                     if ((RAMSIZE8_2x = '1' and rdram_address(activeIndex)(27 downto 23) > 0) or (RAMSIZE8_2x = '0' and rdram_address(activeIndex)(27 downto 22) > 0)) and
+                        not (ALECK64_2x = '1' and activeIndex = DDR3MUX_MEMMUX and
+                             rdram_address(activeIndex) >= 16#0800000# and rdram_address(activeIndex) < 16#1000000#) then
                         if (activeIndex /= DDR3MUX_SS) then
                            if (activeIndex /= DDR3MUX_VI) then -- VI reading cannot damage and request outside will happen, e.g. reading previous line with framebuffer at Address 0
                               error_outReq   <= '1';

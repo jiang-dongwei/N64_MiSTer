@@ -43,6 +43,24 @@ entity n64top is
       RAMSIZE8                : in  std_logic;
       FASTRAM                 : in  std_logic;
       FASTROM                 : in  std_logic;
+      ALECK64                 : in  std_logic;
+      ALECK_E90               : in  std_logic;
+      ALECK_DIPS              : in  std_logic_vector(15 downto 0);
+      ALECK_INPUT             : in  std_logic_vector(1 downto 0);
+      ALECK_JOY1              : in  std_logic_vector(31 downto 0);
+      ALECK_JOY2              : in  std_logic_vector(31 downto 0);
+      ALECK_EEPROM_ADDR       : in  std_logic_vector(8 downto 0);
+      ALECK_EEPROM_WREN       : in  std_logic;
+      ALECK_EEPROM_DATA_IN    : in  std_logic_vector(31 downto 0);
+      ALECK_EEPROM_DATA_OUT   : out std_logic_vector(31 downto 0);
+      ALECK_EEPROM_INIT       : in  std_logic;
+      ALECK_EEPROM_LOADED     : in  std_logic;
+      ALECK_EEPROM_CHANGE     : out std_logic;
+      ALECK_AT24_ADDR         : in  std_logic_vector(5 downto 0);
+      ALECK_AT24_WREN         : in  std_logic;
+      ALECK_AT24_DATA_IN      : in  std_logic_vector(15 downto 0);
+      ALECK_AT24_DATA_OUT     : out std_logic_vector(15 downto 0);
+      ALECK_AT24_CHANGE       : out std_logic;
       INSTRCACHEON            : in  std_logic;
       DATACACHEON             : in  std_logic;
       DATACACHESLOW           : in  std_logic_vector(3 downto 0); 
@@ -401,6 +419,23 @@ architecture arch of n64top is
    signal bus_PIF_write          : std_logic;
    signal bus_PIF_dataRead       : std_logic_vector(31 downto 0);  
    signal bus_PIF_done           : std_logic;
+
+   signal bus_ALECK_addr         : unsigned(31 downto 0);
+   signal bus_ALECK_dataWrite    : std_logic_vector(31 downto 0);
+   signal bus_ALECK_writeMask    : std_logic_vector(3 downto 0);
+   signal bus_ALECK_read         : std_logic;
+   signal bus_ALECK_write        : std_logic;
+   signal bus_ALECK_dataRead     : std_logic_vector(31 downto 0);
+   signal bus_ALECK_done         : std_logic;
+
+   signal vi_video_hsync         : std_logic;
+   signal vi_video_vsync         : std_logic;
+   signal vi_video_hblank        : std_logic;
+   signal vi_video_vblank        : std_logic;
+   signal vi_video_ce            : std_logic;
+   signal vi_video_r             : std_logic_vector(7 downto 0);
+   signal vi_video_g             : std_logic_vector(7 downto 0);
+   signal vi_video_b             : std_logic_vector(7 downto 0);
    
    -- exchange of PIF and controller module
    signal pif_idle               : std_logic;
@@ -521,8 +556,12 @@ architecture arch of n64top is
    signal eeprom_addr            : std_logic_vector(8 downto 0);
    signal eeprom_wren            : std_logic;
    signal eeprom_in              : std_logic_vector(31 downto 0);
-   signal eeprom_out             : std_logic_vector(31 downto 0);
    signal eeprom_change          : std_logic;
+   signal pif_eeprom_addr        : std_logic_vector(8 downto 0);
+   signal pif_eeprom_wren        : std_logic;
+   signal pif_eeprom_in          : std_logic_vector(31 downto 0);
+   signal pif_eeprom_out         : std_logic_vector(31 downto 0);
+   signal savemem_savetype       : std_logic_vector(2 downto 0);
    
    signal change_sram            : std_logic;
    signal change_flash           : std_logic;
@@ -890,15 +929,15 @@ begin
       sdram_dataRead       => sdram_dataRead,
       sdram_valid          => (sdram_done and sdram_rnw),   
       
-      video_hsync          => video_hsync, 
-      video_vsync          => video_vsync,  
-      video_hblank         => video_hblank, 
-      video_vblank         => video_vblank, 
-      video_ce             => video_ce,     
+      video_hsync          => vi_video_hsync,
+      video_vsync          => vi_video_vsync,
+      video_hblank         => vi_video_hblank,
+      video_vblank         => vi_video_vblank,
+      video_ce             => vi_video_ce,
       video_interlace      => video_interlace,     
-      video_r              => video_r,      
-      video_g              => video_g,      
-      video_b              => video_b,
+      video_r              => vi_video_r,
+      video_g              => vi_video_g,
+      video_b              => vi_video_b,
       
       video_FB_en          => video_FB_en,
       video_FB_base        => video_FB_base,
@@ -919,6 +958,48 @@ begin
       SS_rden              => SS_rden(9),
       SS_DataRead          => open --SS_DataRead_VI
    );   
+
+   iAleck64 : entity work.Aleck64
+   port map
+   (
+      clk1x          => clk1x,
+      clkvid         => clkvid,
+      reset          => reset_intern_1x,
+      enabled        => ALECK64,
+      e90_enabled    => ALECK_E90,
+      input_profile  => ALECK_INPUT,
+      dips           => ALECK_DIPS,
+      joy1           => ALECK_JOY1,
+      joy2           => ALECK_JOY2,
+      at24_nv_addr     => ALECK_AT24_ADDR,
+      at24_nv_data_in  => ALECK_AT24_DATA_IN,
+      at24_nv_wren     => ALECK_AT24_WREN,
+      at24_nv_data_out => ALECK_AT24_DATA_OUT,
+      at24_nv_changed  => ALECK_AT24_CHANGE,
+      bus_addr       => bus_ALECK_addr,
+      bus_dataWrite  => bus_ALECK_dataWrite,
+      bus_writeMask  => bus_ALECK_writeMask,
+      bus_read       => bus_ALECK_read,
+      bus_write      => bus_ALECK_write,
+      bus_dataRead   => bus_ALECK_dataRead,
+      bus_done       => bus_ALECK_done,
+      video_hsync_i  => vi_video_hsync,
+      video_vsync_i  => vi_video_vsync,
+      video_hblank_i => vi_video_hblank,
+      video_vblank_i => vi_video_vblank,
+      video_ce_i     => vi_video_ce,
+      video_r_i      => vi_video_r,
+      video_g_i      => vi_video_g,
+      video_b_i      => vi_video_b,
+      video_hsync_o  => video_hsync,
+      video_vsync_o  => video_vsync,
+      video_hblank_o => video_hblank,
+      video_vblank_o => video_vblank,
+      video_ce_o     => video_ce,
+      video_r_o      => video_r,
+      video_g_o      => video_g,
+      video_b_o      => video_b
+   );
    
    iAI : entity work.AI
    port map
@@ -1236,11 +1317,13 @@ begin
       bus_dataRead         => bus_PIF_dataRead, 
       bus_done             => bus_PIF_done,
       
-      eeprom_addr          => eeprom_addr,  
-      eeprom_wren          => eeprom_wren,  
-      eeprom_in            => eeprom_in,    
-      eeprom_out           => eeprom_out,   
+      eeprom_addr          => pif_eeprom_addr,
+      eeprom_wren          => pif_eeprom_wren,
+      eeprom_in            => pif_eeprom_in,
+      eeprom_out           => pif_eeprom_out,
       eeprom_change        => eeprom_change,
+      eeprom_init          => ALECK_EEPROM_INIT,
+      eeprom_loaded        => ALECK_EEPROM_LOADED,
 
       SS_reset             => ss_reset_1x,
       loading_savestate    => loading_savestate,
@@ -1359,6 +1442,7 @@ begin
       clk2xIndex       => clk2xIndex, 
       
       RAMSIZE8         => RAMSIZE8,
+      ALECK64          => ALECK64,
       slow_in          => DDR3SLOW,
       
       error            => errorDDR3,
@@ -1477,6 +1561,7 @@ begin
       
       FASTBUS              => '0',
       FASTRAM              => FASTRAM,
+      ALECK64              => ALECK64,
       
       error                => errorMEMMUX,
       
@@ -1577,7 +1662,15 @@ begin
       bus_PIF_read         => bus_PIF_read,     
       bus_PIF_write        => bus_PIF_write,    
       bus_PIF_dataRead     => bus_PIF_dataRead, 
-      bus_PIF_done         => bus_PIF_done 
+      bus_PIF_done         => bus_PIF_done,
+
+      bus_ALECK_addr       => bus_ALECK_addr,
+      bus_ALECK_dataWrite  => bus_ALECK_dataWrite,
+      bus_ALECK_writeMask  => bus_ALECK_writeMask,
+      bus_ALECK_read       => bus_ALECK_read,
+      bus_ALECK_write      => bus_ALECK_write,
+      bus_ALECK_dataRead   => bus_ALECK_dataRead,
+      bus_ALECK_done       => bus_ALECK_done
    );
 
    icpu : entity work.cpu
@@ -1600,6 +1693,7 @@ begin
       RANDOMMISS           => RANDOMMISS,
       DISABLE_BOOTCOUNT    => DISABLE_BOOTCOUNT,
       DISABLE_DTLBMINI     => DISABLE_DTLBMINI, 
+      ALECK64              => ALECK64,
             
       irqRequest           => irqRequest,
       cpuPaused            => '0',
@@ -1730,7 +1824,14 @@ begin
       request_busy        => savestate_busy    
    );
    
-   any_change <= change_flash or change_sram or eeprom_change or cpak_change or tpak_change;
+   pif_eeprom_addr      <= ALECK_EEPROM_ADDR    when ALECK64 = '1' else eeprom_addr;
+   pif_eeprom_wren      <= ALECK_EEPROM_WREN    when ALECK64 = '1' else eeprom_wren;
+   pif_eeprom_in        <= ALECK_EEPROM_DATA_IN when ALECK64 = '1' else eeprom_in;
+   ALECK_EEPROM_DATA_OUT <= pif_eeprom_out;
+   ALECK_EEPROM_CHANGE   <= eeprom_change and ALECK64;
+
+   savemem_savetype <= "000" when ALECK64 = '1' else SAVETYPE;
+   any_change <= change_flash or change_sram or (eeprom_change and not ALECK64) or cpak_change or tpak_change;
    
    isavemem : entity work.savemem
    port map
@@ -1738,7 +1839,7 @@ begin
       clk                  => clk1x,  
       reset                => reset,
       
-      SAVETYPE             => SAVETYPE,
+      SAVETYPE             => savemem_savetype,
       CONTROLLERPAK        => CONTROLLERPAK,
       TRANSFERPAK          => TRANSFERPAK,
       
@@ -1754,7 +1855,7 @@ begin
       eeprom_addr          => eeprom_addr,   
       eeprom_wren          => eeprom_wren,   
       eeprom_in            => eeprom_in,     
-      eeprom_out           => eeprom_out,    
+      eeprom_out           => pif_eeprom_out,
       
       sdram_request        => sdramMux_request(SDRAMMUX_SAV),   
       sdram_rnw            => sdramMux_rnw(SDRAMMUX_SAV),       
