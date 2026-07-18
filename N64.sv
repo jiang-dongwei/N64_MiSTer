@@ -181,7 +181,7 @@ assign HDMI_BOB_DEINT = 0;
 assign AUDIO_S   = 1;
 assign AUDIO_MIX = status[8:7];
 
-assign LED_USER  = cartN64_download | cartGB_download | bk_pending;
+assign LED_USER  = cartN64_download | cartGB_download | aleckExtra_download | bk_pending;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 assign VGA_SCALER= 0;
@@ -292,13 +292,13 @@ wire reset_or = RESET | buttons[1] | status[0];
 
 `include "build_id.v"
 parameter CONF_STR = {
-	"N64;SS3C000000:1000000;",
-   "FS1,N64z64n64v64,Load,32000000;",
-   "F2,GBCGB ,Load GB-Transfer;",
-   "-;",
-   "C,Cheats;",
-   "O[103],Cheats Enabled,Yes,No;",
-   "-;",
+	"Aleck64;SS3C000000:1000000;",
+   "H2FS1,N64z64n64v64,Load,32000000;",
+   "H2F2,GBCGB ,Load GB-Transfer;",
+   "H2-;",
+   "H2C,Cheats;",
+   "H2O[103],Cheats Enabled,Yes,No;",
+   "H2-;",
 	"R[40],Reload Backup RAM;",
 	"R[41],Save Backup RAM;",
 	"O[42],Autosave,On,Off;",
@@ -309,14 +309,15 @@ parameter CONF_STR = {
 	//"RH,Save state (Alt-F1);",
 	//"RI,Restore state (F1);",
 	"-;",
-   "O[51:49],Pad 1 Type,N64Pad,None,ControllerPak,RumblePak,SNAC,TransferPak,Keyboard;",
-   "O[54:52],Pad 2 Type,N64Pad,None,ControllerPak,RumblePak,SNAC;",
-   "O[57:55],Pad 3 Type,N64Pad,None,ControllerPak,RumblePak,SNAC;",
-   "O[60:58],Pad 4 Type,N64Pad,None,ControllerPak,RumblePak,SNAC;",
-   "O[92],Swap Analog<->DPAD,Off,On;",
-   "O[86:84],Mouse for P1,Off,Buttons ABZ,Buttons ZAB,Buttons ZBA;",
-   "O[62:61],Dual Controller,Off,P1->P2,P1->P3;",
-   "O[63],Analog Stick Swap,Off,On;",
+   "H2O[51:49],Pad 1 Type,N64Pad,None,ControllerPak,RumblePak,SNAC,TransferPak,Keyboard;",
+   "H2O[54:52],Pad 2 Type,N64Pad,None,ControllerPak,RumblePak,SNAC;",
+   "H2O[57:55],Pad 3 Type,N64Pad,None,ControllerPak,RumblePak,SNAC;",
+   "H2O[60:58],Pad 4 Type,N64Pad,None,ControllerPak,RumblePak,SNAC;",
+   "H2O[92],Swap Analog<->DPAD,Off,On;",
+   "H2O[86:84],Mouse for P1,Off,Buttons ABZ,Buttons ZAB,Buttons ZBA;",
+   "H2O[62:61],Dual Controller,Off,P1->P2,P1->P3;",
+   "H2O[63],Analog Stick Swap,Off,On;",
+	"DIP;",
 	"-;",
    
    "P1,Video & Audio;",
@@ -325,7 +326,7 @@ parameter CONF_STR = {
    "D0P1O[45:44],Crop Vertical,None,8,12;",
    "P1O[48:47],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
    "P1-;",
-   "P1O[105],Video Out,Original(VI),Clean HDMI;",
+   "H3P1O[105],Video Out,Original(VI),Clean HDMI;",
    "D1P1O[104],VI Colorbits,Original(21),24;",
    "D1P1O[32],VI Bilinear,Original,Off;",
    "D1P1O[89],VI Deblur,Original,On;",
@@ -342,42 +343,42 @@ parameter CONF_STR = {
    "P1O[2],Error Overlay,Off,On;",
    "P1O[28],FPS Overlay,Off,On;",
    
-   "P2,System settings;",
-	"P2-;",
-   "P2-,From N64-database;",
-	"P2O[64],Auto Detect,On,Off;",
-   "P2O[90],Patch games,Yes(Auto),Off;",
-   "P2O[70],RAM size,8MByte,4MByte;",
-   "P2O[80:79],System Type,NTSC,PAL;",
-	"P2O[68:65],CIC,6101,6102,7101,7102,6103,7103,6105,7105,6106,7106,8303,8401,5167,DDUS,5101;",
-   "P2O[81],Auto Setup Pak Type,On,Off;",
-   "P2O[71],ControllerPak,Off,On;",
-   "P2O[72],RumblePak,Off,On;",
-   "P2O[73],TransferPak,Off,On;",
-   "P2O[74],RTC,Off,On;",
-   "P2O[77:75],Save Type,None,EEPROM4,EEPROM16,SRAM32,SRAM96,Flash;",
+   "H2P2,System settings;",
+	"H2P2-;",
+   "H2P2-,From N64-database;",
+	"H2P2O[64],Auto Detect,On,Off;",
+   "H2P2O[90],Patch games,Yes(Auto),Off;",
+   "H2P2O[70],RAM size,8MByte,4MByte;",
+   "H2P2O[80:79],System Type,NTSC,PAL;",
+	"H2P2O[68:65],CIC,6101,6102,7101,7102,6103,7103,6105,7105,6106,7106,8303,8401,5167,DDUS,5101;",
+   "H2P2O[81],Auto Setup Pak Type,On,Off;",
+   "H2P2O[71],ControllerPak,Off,On;",
+   "H2P2O[72],RumblePak,Off,On;",
+   "H2P2O[73],TransferPak,Off,On;",
+   "H2P2O[74],RTC,Off,On;",
+   "H2P2O[77:75],Save Type,None,EEPROM4,EEPROM16,SRAM32,SRAM96,Flash;",
    
-   "P3,Debug settings;",
-   "P3O[83],Fast RAM access,Off,On;",
-   "P3O[106],Fast ROM access,Off,On;",
-   "P3O[93],Instr Cache,On,Off;",
-   "P3O[43],Data Cache,On,Off;",
-   "P3O[100],Data Cache from TLB,On,Off;",
-   "P3O[29],Data FORCE WB,Off,On;",
-   "P3O[99],DTLB Mini Cache,On,Off;",
-   //"P3O[97:94],iTLB Random Miss,Off,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15;",
-   "P3O[27:24],Cache Delay,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15;",
-   "P3O[23:20],DDR3 Delay,0,16,24,32,40,48,56,64,72,80,88,96,104,112;",
-   "P3O[98],RDRAM Calib Waittime,On,Off;",
-   "P3O[11],Write Bit 9,On,Off;",
-   "P3O[12],Read Bit 9,On,Off;",
-   "P3O[13],Wait Bit 9,On,Off;",
-   "P3O[14],Write Z,On,Off;",
-   "P3O[15],Read Z,On,Off;",
-   "P3O[1],Swap Interlaced,Off,On;",
-   "P3O[101],AI processing,On,Off;",
-   "P3O[102],AI IRQ,On,Off;",
-   "P3O[91],SNAC Compare,Off,On;",
+   "H2P3,Debug settings;",
+   "H2P3O[83],Fast RAM access,Off,On;",
+   "H2P3O[106],Fast ROM access,Off,On;",
+   "H2P3O[93],Instr Cache,On,Off;",
+   "H2P3O[43],Data Cache,On,Off;",
+   "H2P3O[100],Data Cache from TLB,On,Off;",
+   "H2P3O[29],Data FORCE WB,Off,On;",
+   "H2P3O[99],DTLB Mini Cache,On,Off;",
+   //"H2P3O[97:94],iTLB Random Miss,Off,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15;",
+   "H2P3O[27:24],Cache Delay,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15;",
+   "H2P3O[23:20],DDR3 Delay,0,16,24,32,40,48,56,64,72,80,88,96,104,112;",
+   "H2P3O[98],RDRAM Calib Waittime,On,Off;",
+   "H2P3O[11],Write Bit 9,On,Off;",
+   "H2P3O[12],Read Bit 9,On,Off;",
+   "H2P3O[13],Wait Bit 9,On,Off;",
+   "H2P3O[14],Write Z,On,Off;",
+   "H2P3O[15],Read Z,On,Off;",
+   "H2P3O[1],Swap Interlaced,Off,On;",
+   "H2P3O[101],AI processing,On,Off;",
+   "H2P3O[102],AI IRQ,On,Off;",
+   "H2P3O[91],SNAC Compare,Off,On;",
    "-;",
    
 	"R0,Reset;",
@@ -404,11 +405,11 @@ wire  [1:0] buttons;
 wire [127:0] status;
 wire        forced_scandoubler;
 
-wire [19:0] joy;
-wire [19:0] joy_unmod;
-wire [19:0] joy2;
-wire [19:0] joy3;
-wire [19:0] joy4;
+wire [31:0] joy;
+wire [31:0] joy_unmod;
+wire [31:0] joy2;
+wire [31:0] joy3;
+wire [31:0] joy4;
 
 wire [15:0] joystick_analog_l0;
 wire [15:0] joystick_analog_l1;
@@ -422,21 +423,129 @@ wire [2:0]  ps2_kbd_led_status;
 wire [2:0]  ps2_kbd_led_use = 3'b011;
 
 wire        fixed_blanks_off = status[82];
-wire        clean_hdmi = status[105];
+wire        clean_hdmi;
 wire        video_FB_en;
 
 wire [127:0] status_in = {status[127:40],ss_slot,status[37:0]};
-wire [15:0] status_menumask = {14'd0, clean_hdmi, fixed_blanks_off};
 
 wire DIRECT_VIDEO;
 
 wire        ioctl_download;
+wire        ioctl_upload;
 reg         ioctl_download_1;
 wire [26:0] ioctl_addr;
 wire [15:0] ioctl_dout;
 wire        ioctl_wr;
 wire  [7:0] ioctl_index;
 reg         ioctl_wait = 0;
+
+// MRA index 3 contains the Aleck64 machine descriptor:
+// bit 0 = Aleck64 mode, bit 1 = E90 custom video, bit 2 = 8 MiB N64 RDRAM.
+// bits 4:3 = input profile: 0 PIF gamepads, 1 direct JAMMA, 2 mahjong,
+// 3 Vivid Dolls (PIF/JAMMA selected by DIP SW2 #5).
+// bit 5 = force the disconnected D-pad signature required by Eleven Beat.
+// bit 6 = BK4D-NUS 4-kbit EEPROM, persisted through MRA NVRAM index 4.
+reg  [7:0] aleck_config = 0;
+reg [15:0] aleck_dips = 16'hFFFF;
+wire       aleck_mode = aleck_config[0];
+wire       aleck_e90  = aleck_config[1];
+wire [1:0] aleck_input = aleck_config[4:3];
+wire       aleck_disconnected_dpad = aleck_mode && aleck_config[5];
+wire       aleck_eeprom = aleck_mode && aleck_config[6];
+// E90 draws its puzzle-piece layer after the VI pixel stream. Direct
+// framebuffer output bypasses that compositor, so keep Clean HDMI unavailable
+// only on E90 while exposing it for standard Aleck64 boards.
+assign     clean_hdmi = status[105] && !aleck_e90;
+wire [15:0] status_menumask = {12'd0, aleck_e90, aleck_mode, clean_hdmi, fixed_blanks_off};
+
+reg  [8:0]  aleck_eeprom_addr = 0;
+reg  [31:0] aleck_eeprom_data_in = 0;
+wire [31:0] aleck_eeprom_data_out;
+reg         aleck_eeprom_wren = 0;
+reg         aleck_eeprom_init = 0;
+reg         aleck_eeprom_loaded = 0;
+wire        aleck_eeprom_change;
+reg  [5:0]  aleck_at24_addr = 0;
+reg  [15:0] aleck_at24_data_in = 0;
+wire [15:0] aleck_at24_data_out;
+reg         aleck_at24_wren = 0;
+wire        aleck_at24_change;
+reg         aleck_at24_nvram_valid = 0;
+reg  [19:0] aleck_eeprom_save_delay = 0;
+reg         aleck_eeprom_upload_req = 0;
+wire [26:0] aleck_at24_ioctl_offset = ioctl_addr - 27'd514;
+wire [15:0] aleck_eeprom_upload_data = (ioctl_addr < 27'd512) ?
+   (ioctl_addr[1] ? aleck_eeprom_data_out[31:16] : aleck_eeprom_data_out[15:0]) :
+   ((ioctl_addr == 27'd512) ? 16'h24A5 : aleck_at24_data_out);
+
+always @(posedge clk_1x) begin
+	// MRA downloads occur while the core is held in RESET.  These descriptor
+	// registers therefore use their FPGA power-up values and must remain
+	// writable throughout reset; clearing them here would erase the selected
+	// Aleck64 machine before the CPU is released.
+	if(ioctl_wr) begin
+		if(ioctl_index == 8'd3 && !ioctl_addr[26:1]) aleck_config <= ioctl_dout[7:0];
+		if(ioctl_index == 8'hFE && !ioctl_addr[26:1]) aleck_dips <= ioctl_dout;
+	end
+end
+
+// The MRA loader replays the combined NVRAM file on index 4. Pack its first
+// 512 bytes into the PIF EEPROM's 32-bit maintenance port; Magical Tetris's
+// tagged AT24 extension follows it. The loaded flag is deliberately not
+// reset: MRA data arrives while the core reset is asserted.
+always @(posedge clk_1x) begin
+	aleck_eeprom_wren <= 0;
+	aleck_eeprom_init <= 0;
+	aleck_at24_wren <= 0;
+	if(ioctl_wr && ioctl_index == 8'd3 && !ioctl_addr[26:1]) begin
+		// A new MRA must not inherit the previous title's contents when no
+		// NVRAM file exists. Start the PIF erase while the remaining ROMs load.
+		aleck_eeprom_init <= 1;
+		aleck_eeprom_loaded <= 0;
+		aleck_at24_nvram_valid <= 0;
+		aleck_eeprom_save_delay <= 0;
+	end
+	if(ioctl_wr && ioctl_index == 8'd4 && ioctl_addr < 27'd512) begin
+		// Assert this on the low half so the following high-half write can
+		// immediately take ownership of the PIF EEPROM maintenance port.
+		aleck_eeprom_loaded <= 1;
+		aleck_eeprom_addr <= ioctl_addr[10:2];
+		if(!ioctl_addr[1]) begin
+			aleck_eeprom_data_in[15:0] <= ioctl_dout;
+		end else begin
+			aleck_eeprom_data_in[31:16] <= ioctl_dout;
+			aleck_eeprom_wren <= 1;
+		end
+	end else if(ioctl_wr && ioctl_index == 8'd4 && aleck_e90 && ioctl_addr == 27'd512) begin
+		// A header distinguishes the extended format from an older 512-byte
+		// save that Main may zero-pad to the MRA's new length.
+		aleck_at24_nvram_valid <= (ioctl_dout == 16'h24A5);
+	end else if(ioctl_wr && ioctl_index == 8'd4 && aleck_e90 &&
+	            ioctl_addr >= 27'd514 && ioctl_addr < 27'd642) begin
+		aleck_at24_addr <= aleck_at24_ioctl_offset[6:1];
+		aleck_at24_data_in <= ioctl_dout;
+		aleck_at24_wren <= aleck_at24_nvram_valid;
+	end else if(ioctl_wr && ioctl_index == 8'd5 && aleck_e90 && ioctl_addr < 27'd128) begin
+		// Factory contents dumped from the E90 board. A persistent index-4
+		// image, when present, is streamed later and overrides this seed.
+		aleck_at24_addr <= ioctl_addr[6:1];
+		aleck_at24_data_in <= ioctl_dout;
+		aleck_at24_wren <= 1;
+	end else if(ioctl_upload && ioctl_index == 8'd4) begin
+		if(ioctl_addr < 27'd512) aleck_eeprom_addr <= ioctl_addr[10:2];
+		else if(ioctl_addr >= 27'd514) aleck_at24_addr <= aleck_at24_ioctl_offset[6:1];
+	end
+
+	// Wait until the complete eight-byte PIF write has settled, then ask the
+	// arcade framework to save the MRA NVRAM file.
+	aleck_eeprom_upload_req <= 0;
+	if(aleck_eeprom && (aleck_eeprom_change || (aleck_e90 && aleck_at24_change))) begin
+		aleck_eeprom_save_delay <= 20'd1000000;
+	end else if(aleck_eeprom_save_delay != 0) begin
+		aleck_eeprom_save_delay <= aleck_eeprom_save_delay - 1'd1;
+		if(aleck_eeprom_save_delay == 1) aleck_eeprom_upload_req <= 1;
+	end
+end
 
 reg [7:0] info_index;
 reg info_req;
@@ -468,8 +577,12 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1)) hps_io
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_download(ioctl_download),
+	.ioctl_upload(ioctl_upload),
 	.ioctl_index(ioctl_index),
 	.ioctl_wait(ioctl_wait),
+	.ioctl_upload_req(aleck_eeprom_upload_req),
+	.ioctl_upload_index(8'd4),
+	.ioctl_din(aleck_eeprom_upload_data),
 
    .joystick_0(joy_unmod),
 	.joystick_1(joy2),
@@ -557,6 +670,7 @@ reg        ramdownload_wr;
 wire       ramdownload_ready;
 reg        cartN64_download;
 reg        cartGB_download;
+reg        aleckExtra_download;
 reg        cart_loaded = 0;
 
 localparam CARTN64_START = 16777216;
@@ -565,7 +679,8 @@ localparam CARTGB_START  = 8388608;
 always @(posedge clk_1x) begin
 
    cartN64_download     <= ioctl_download & (ioctl_index[5:0] == 1);
-   cartGB_download      <= ioctl_download & (ioctl_index[5:0] == 2);
+   cartGB_download      <= ioctl_download & (ioctl_index[5:0] == 2) & ~aleck_mode;
+   aleckExtra_download  <= ioctl_download & (ioctl_index[5:0] == 2) & aleck_mode;
    
    ioctl_download_1 <= ioctl_download;
 
@@ -578,7 +693,7 @@ always @(posedge clk_1x) begin
 	ramdownload_wr <= 0;
 	if(cartN64_download) begin
       cart_loaded <= 1;
-   end else if(cartGB_download) begin
+	end else if(cartGB_download) begin
       if (ioctl_wr) begin
          if(~ioctl_addr[1]) begin
             ramdownload_wrdata[15:0] <= ioctl_dout;
@@ -737,12 +852,12 @@ n64top
    //.clk2x(clk_1x),          
    .clkvid(clk_vid),
    .reset(reset_or),
-   .softreset(joy[14]),
+   .softreset((aleck_mode && aleck_input == 2'b10) ? 1'b0 : joy[14]),
    .pause(OSD_STATUS),
    .errorCodesOn(status[2]),
    .fpscountOn(status[28]),
    
-   .ISPAL(status[79]),
+   .ISPAL(aleck_mode ? 1'b0 : status[79]),
    .FIXEDBLANKS(~fixed_blanks_off && ~clean_hdmi),
    
    .CROPVERTICAL(status[45:44]),
@@ -757,10 +872,28 @@ n64top
    .VI_7BITPERCOLOR(~status[104]),
    .VI_DIRECTFBMODE(clean_hdmi),
    
-   .CICTYPE(status[68:65]),
-   .RAMSIZE8(~status[70]),
+   .CICTYPE(aleck_mode ? 4'd14 : status[68:65]),
+   .RAMSIZE8(aleck_mode ? aleck_config[2] : ~status[70]),
    .FASTRAM(status[83]),
    .FASTROM(status[106]),
+   .ALECK64(aleck_mode),
+   .ALECK_E90(aleck_e90),
+   .ALECK_DIPS(aleck_dips),
+   .ALECK_INPUT(aleck_input),
+   .ALECK_JOY1(joy),
+   .ALECK_JOY2(joy2),
+   .ALECK_EEPROM_ADDR(aleck_eeprom_addr),
+   .ALECK_EEPROM_WREN(aleck_eeprom_wren),
+   .ALECK_EEPROM_DATA_IN(aleck_eeprom_data_in),
+   .ALECK_EEPROM_DATA_OUT(aleck_eeprom_data_out),
+   .ALECK_EEPROM_INIT(aleck_eeprom_init),
+   .ALECK_EEPROM_LOADED(aleck_eeprom_loaded),
+   .ALECK_EEPROM_CHANGE(aleck_eeprom_change),
+   .ALECK_AT24_ADDR(aleck_at24_addr),
+   .ALECK_AT24_WREN(aleck_at24_wren),
+   .ALECK_AT24_DATA_IN(aleck_at24_data_in),
+   .ALECK_AT24_DATA_OUT(aleck_at24_data_out),
+   .ALECK_AT24_CHANGE(aleck_at24_change),
    .INSTRCACHEON(~status[93]),
    .DATACACHEON(~status[43]),
    .DATACACHESLOW(status[27:24]),
@@ -819,8 +952,8 @@ n64top
    .sdram_dataRead    (sdram_dataRead    ),
       
    // pad
-   .PADTYPE0         (status[51:49]),
-   .PADTYPE1         (status[54:52]),
+   .PADTYPE0         (aleck_mode ? (aleck_e90 ? 3'b001 : 3'b000) : status[51:49]),
+   .PADTYPE1         (aleck_mode ? (aleck_e90 ? 3'b001 : 3'b000) : status[54:52]),
    .PADTYPE2         (status[57:55]),
    .PADTYPE3         (status[60:58]),
    .MOUSETYPE        (status[86:84]),
@@ -830,10 +963,10 @@ n64top
    .pad_B            ({joy4[ 5],joy3[ 5],joy2[ 5],joy[ 5]}),
    .pad_Z            ({status[61]? joy3[11] : status[62]? joy2[11] : joy4[ 9],status[62]? joy[11] : joy3[ 9],status[61] ? joy[ 11] :joy2[ 9],joy[ 9]}),
    .pad_START        ({joy4[ 6],joy3[ 6],joy2[ 6],joy[ 6]}),
-   .pad_DPAD_UP      ({joy4[ 3],joy3[ 3],joy2[ 3],joy[ 3]}),
-   .pad_DPAD_DOWN    ({joy4[ 2],joy3[ 2],joy2[ 2],joy[ 2]}),
-   .pad_DPAD_LEFT    ({joy4[ 1],joy3[ 1],joy2[ 1],joy[ 1]}),
-   .pad_DPAD_RIGHT   ({joy4[ 0],joy3[ 0],joy2[ 0],joy[ 0]}),
+   .pad_DPAD_UP      ({joy4[ 3],joy3[ 3],aleck_disconnected_dpad ? 1'b1 : joy2[3],aleck_disconnected_dpad ? 1'b1 : joy[3]}),
+   .pad_DPAD_DOWN    ({joy4[ 2],joy3[ 2],aleck_disconnected_dpad ? 1'b1 : joy2[2],aleck_disconnected_dpad ? 1'b1 : joy[2]}),
+   .pad_DPAD_LEFT    ({joy4[ 1],joy3[ 1],aleck_disconnected_dpad ? 1'b1 : joy2[1],aleck_disconnected_dpad ? 1'b1 : joy[1]}),
+   .pad_DPAD_RIGHT   ({joy4[ 0],joy3[ 0],aleck_disconnected_dpad ? 1'b1 : joy2[0],aleck_disconnected_dpad ? 1'b1 : joy[0]}),
    .pad_L            ({joy4[ 7],joy3[ 7],joy2[ 7],joy[ 7]}),
    .pad_R            ({joy4[ 8],joy3[ 8],joy2[ 8],joy[ 8]}),
    .pad_C_UP         ({joy4[10],joy3[10],joy2[10],joy[10]}),
@@ -878,7 +1011,7 @@ n64top
    .sound_out_right  (AUDIO_R),  
    
    // Saves
-   .SAVETYPE         (status[77:75]),
+   .SAVETYPE         (aleck_mode ? (aleck_eeprom ? 3'b001 : 3'b000) : status[77:75]),
    .CONTROLLERPAK    (status[71]),
    .TRANSFERPAK      (status[73]),
    

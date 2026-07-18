@@ -20,6 +20,7 @@ entity cpu_cop0 is
       RANDOMMISS              : in  unsigned(3 downto 0);
       DISABLE_BOOTCOUNT       : in  std_logic;
       DISABLE_DTLBMINI        : in  std_logic;
+      ALECK64                 : in  std_logic;
             
       error_exception         : out std_logic := '0';
       error_TLB               : out std_logic := '0';
@@ -1182,7 +1183,12 @@ begin
    TLBREAD_region   <= unsigned(TLBMEM_readData(99 downto 98));
    TLBREAD_random   <= TLBMEM_readData(100);
    
-   TLB_fetchAddrOutMasked <= "000" & TLB_fetchAddrOut(28 downto 0); -- only for 32bit mode, 64bit needs addr &= 0x7FFFFFFF;
+   -- A stock N64 exposes a 29-bit physical bus, so the console path masks
+   -- TLB PFNs as before. Aleck64 software deliberately maps full 32-bit
+   -- physical regions at C0000000, C0800000 and D0000000; truncating those
+   -- aliases input/video/board RAM onto ordinary N64 memory.
+   TLB_fetchAddrOutMasked <= TLB_fetchAddrOut when ALECK64 = '1' else
+                             "000" & TLB_fetchAddrOut(28 downto 0);
    
    icpu_TLB_instr : entity work.cpu_TLB_instr
    port map

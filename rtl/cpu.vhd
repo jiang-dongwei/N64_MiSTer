@@ -26,6 +26,7 @@ entity cpu is
       RANDOMMISS            : in  unsigned(3 downto 0);
       DISABLE_BOOTCOUNT     : in  std_logic;
       DISABLE_DTLBMINI      : in  std_logic;
+      ALECK64               : in  std_logic;
 
       irqRequest            : in  std_logic;
       cpuPaused             : in  std_logic;
@@ -3329,6 +3330,7 @@ begin
       RANDOMMISS              => RANDOMMISS,
       DISABLE_BOOTCOUNT       => DISABLE_BOOTCOUNT,
       DISABLE_DTLBMINI        => DISABLE_DTLBMINI, 
+      ALECK64                 => ALECK64,
             
       error_exception         => error_exception,
       error_TLB               => error_TLB,

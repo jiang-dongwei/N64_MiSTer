@@ -14,6 +14,7 @@ entity memorymux is
       
       FASTBUS              : in  std_logic;
       FASTRAM              : in  std_logic;
+      ALECK64              : in  std_logic;
       
       error                : out std_logic;
      
@@ -114,11 +115,30 @@ entity memorymux is
       bus_PIF_read         : out std_logic;
       bus_PIF_write        : out std_logic;
       bus_PIF_dataRead     : in  std_logic_vector(31 downto 0);
-      bus_PIF_done         : in  std_logic
+      bus_PIF_done         : in  std_logic;
+
+      bus_ALECK_addr       : out unsigned(31 downto 0) := (others => '0');
+      bus_ALECK_dataWrite  : out std_logic_vector(31 downto 0);
+      bus_ALECK_writeMask  : out std_logic_vector(3 downto 0);
+      bus_ALECK_read       : out std_logic;
+      bus_ALECK_write      : out std_logic;
+      bus_ALECK_dataRead   : in  std_logic_vector(31 downto 0);
+      bus_ALECK_done       : in  std_logic
    );
 end entity;
 
 architecture arch of memorymux is
+
+   constant ALECK_RAM_BASE   : unsigned(31 downto 0) := x"C0000000";
+   constant ALECK_RAM_END    : unsigned(31 downto 0) := x"C0800000";
+   constant ALECK_INPUT_BASE : unsigned(31 downto 0) := x"C0800000";
+   constant ALECK_INPUT_END  : unsigned(31 downto 0) := x"C0801000";
+   constant ALECK_VRAM_BASE  : unsigned(31 downto 0) := x"D0000000";
+   constant ALECK_VRAM_END   : unsigned(31 downto 0) := x"D0001000";
+   constant ALECK_PAL_BASE   : unsigned(31 downto 0) := x"D0010000";
+   constant ALECK_PAL_END    : unsigned(31 downto 0) := x"D0011000";
+   constant ALECK_PROT_BASE  : unsigned(31 downto 0) := x"D0030000";
+   constant ALECK_PROT_END   : unsigned(31 downto 0) := x"D0030020";
   
    type tState is
    (
@@ -143,7 +163,7 @@ architecture arch of memorymux is
 
 begin 
 
-   process (mem_address, mem_request, mem_rnw, mem_dataWrite, mem_req64)
+   process (mem_address, mem_request, mem_rnw, mem_dataWrite, mem_writeMask, mem_req64, ALECK64)
       variable data_rotated : std_logic_vector(31 downto 0);
    begin
    
@@ -267,13 +287,31 @@ begin
          bus_PIF_write   <= not mem_rnw;
       end if;
 
+      -- Aleck64 arcade I/O and E90 custom video registers.
+      bus_ALECK_read      <= '0';
+      bus_ALECK_write     <= '0';
+      bus_ALECK_addr      <= mem_address;
+      bus_ALECK_dataWrite <= data_rotated;
+      -- data_rotated byte-swaps the CPU word for the little-endian internal
+      -- peripheral bus, so its byte enables must be swapped as well.
+      bus_ALECK_writeMask <= mem_writeMask(0) & mem_writeMask(1) &
+                             mem_writeMask(2) & mem_writeMask(3);
+      if mem_request = '1' and ALECK64 = '1' and
+         ((mem_address >= ALECK_INPUT_BASE and mem_address < ALECK_INPUT_END) or
+          (mem_address >= ALECK_VRAM_BASE and mem_address < ALECK_VRAM_END) or
+          (mem_address >= ALECK_PAL_BASE and mem_address < ALECK_PAL_END) or
+          (mem_address >= ALECK_PROT_BASE and mem_address < ALECK_PROT_END)) then
+         bus_ALECK_read  <= mem_rnw;
+         bus_ALECK_write <= not mem_rnw;
+      end if;
+
    end process;
 
    dataFromBusses <= bus_RDR_dataRead or bus_RSP_dataRead or bus_RDP_dataRead or bus_MI_dataRead or bus_VI_dataRead or bus_AI_dataRead or bus_PIreg_dataRead or bus_RI_dataRead or 
-                     bus_SI_dataRead or bus_PIcart_dataRead or bus_PIF_dataRead;
+                     bus_SI_dataRead or bus_PIcart_dataRead or bus_PIF_dataRead or bus_ALECK_dataRead;
    
    bus_done <= bus_RDR_done or bus_RSP_done or bus_RDP_done or bus_MI_done or bus_VI_done or bus_AI_done or bus_PIreg_done or bus_RI_done or 
-               bus_SI_done or bus_PIcart_done or bus_PIF_done;
+               bus_SI_done or bus_PIcart_done or bus_PIF_done or bus_ALECK_done;
 
    process (clk1x)
       variable offset    : unsigned(3 downto 0);
@@ -449,6 +487,29 @@ begin
                         state    <= WAITBUS;
                         if (mem_rnw = '1') then
                            bus_slow <= 137;
+                        else
+                           bus_slow <= 3;
+                        end if;
+
+                     elsif ALECK64 = '1' and mem_address >= ALECK_RAM_BASE and mem_address < ALECK_RAM_END then -- Aleck64 SDRAM
+                        state             <= WAITRAM;
+                        rdram_request     <= '1';
+                        rdram_address     <= to_unsigned(16#800000#, 28) + resize(mem_address(22 downto 0), 28);
+                        rdram_address(2 downto 0) <= (others => '0');
+                        if mem_rnw = '1' then
+                           bus_slow <= 15;
+                        else
+                           bus_slow <= 6;
+                        end if;
+
+                     elsif ALECK64 = '1' and
+                           ((mem_address >= ALECK_INPUT_BASE and mem_address < ALECK_INPUT_END) or
+                            (mem_address >= ALECK_VRAM_BASE and mem_address < ALECK_VRAM_END) or
+                            (mem_address >= ALECK_PAL_BASE and mem_address < ALECK_PAL_END) or
+                            (mem_address >= ALECK_PROT_BASE and mem_address < ALECK_PROT_END)) then
+                        state <= WAITBUS;
+                        if mem_rnw = '1' then
+                           bus_slow <= 9;
                         else
                            bus_slow <= 3;
                         end if;
