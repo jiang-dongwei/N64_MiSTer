@@ -49,8 +49,9 @@ To install an MRA:
 Each MRA performs MAME's per-file 16-bit program-ROM word swap, concatenates
 split program images in MAME order, and applies the Aleck64 protection patch
 while assembling the download; no extracted or converted ROM is needed. The
-E90 puzzle-piece overlay follows the reference MAME implementation. The
-BK4D-NUS PIF EEPROM is restored when the MRA starts and is saved after a game
+E90 puzzle-piece overlay extends the reference MAME implementation with the
+tile `0x0400` playfield-background mode. The BK4D-NUS PIF EEPROM is restored
+when the MRA starts and is saved after a game
 write when the OSD is next opened; **Save Settings** also writes it explicitly.
 Magical Tetris's separate 128-byte S2D board memory is initialized from the
 MAME `at24c01.u34` dump and appended to the same persistent NVRAM file. Existing

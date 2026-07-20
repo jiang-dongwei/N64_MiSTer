@@ -102,6 +102,7 @@ architecture arch of Aleck64 is
    signal render_entry    : integer range 0 to 511 := 0;
    signal render_x        : integer range 0 to 7 := 0;
    signal render_y        : integer range 0 to 7 := 0;
+   signal render_playfield: std_logic := '0';
    signal render_attr     : std_logic_vector(15 downto 0) := (others => '0');
    signal render_pos      : std_logic_vector(31 downto 0) := (others => '0');
    signal prev_pos        : std_logic_vector(31 downto 0) := (others => '0');
@@ -174,6 +175,21 @@ architecture arch of Aleck64 is
    function expand5(value : std_logic_vector(4 downto 0)) return std_logic_vector is
    begin
       return value & value(4 downto 2);
+   end function;
+
+   -- Tile 0x0400 with attribute 0x0060 is E90's empty playfield cell.  It is
+   -- not disabled despite attribute bit 5 being set.  The real board renders
+   -- the same eight-pixel vertical intensity pattern in every cell.
+   function e90_playfield_level(pixel : integer) return std_logic_vector is
+   begin
+      case pixel is
+         when 0      => return "00100";
+         when 1      => return "00010";
+         when 5      => return "00010";
+         when 6      => return "00100";
+         when 7      => return "01000";
+         when others => return "00000";
+      end case;
    end function;
 
 begin
@@ -621,6 +637,11 @@ begin
 
                when RENDER_ATTR_CAPTURE =>
                   render_attr  <= vram_data_b(15 downto 0);
+                  if vram_data_b = x"04000060" then
+                     render_playfield <= '1';
+                  else
+                     render_playfield <= '0';
+                  end if;
                   vram_addr_b  <= std_logic_vector(to_unsigned((render_entry * 2) + 1, 10));
                   render_state <= RENDER_POS_WAIT;
 
@@ -633,10 +654,15 @@ begin
                   render_y   <= 0;
                   prev_addr_write <= std_logic_vector(to_unsigned(render_entry, 9));
                   -- Clearing only consumes X (31..16) and Y (7..0).
-                  prev_data_write <= render_attr(5) & vram_data_b(31 downto 16) &
-                                     vram_data_b(7 downto 0);
+                  if render_attr(5) = '0' or render_playfield = '1' then
+                     prev_data_write <= '0' & vram_data_b(31 downto 16) &
+                                        vram_data_b(7 downto 0);
+                  else
+                     prev_data_write <= '1' & vram_data_b(31 downto 16) &
+                                        vram_data_b(7 downto 0);
+                  end if;
                   prev_write      <= '1';
-                  if render_attr(5) = '1' then
+                  if render_attr(5) = '1' and render_playfield = '0' then
                      if render_entry = 511 then
                         prev_valid   <= '1';
                         render_state <= RENDER_IDLE;
@@ -652,23 +678,18 @@ begin
                   xpos := to_integer(shift_right(signed(render_pos(31 downto 16)), 1)) + render_x + 4;
                   ypos := to_integer(unsigned(render_pos(7 downto 0))) + render_y + 7;
 
-                  palbank := to_integer(unsigned(render_attr(2 downto 1)));
-                  if render_pos(15 downto 8) = x"BC" then
-                     palbank := palbank + 32;
-                  end if;
-                  palbank  := palbank + (to_integer(unsigned(render_attr(7 downto 6))) * 4);
-                  palindex := (palbank * 16) + PAL_TABLE((render_y * 8) + render_x);
-
-                  if xpos >= 0 and xpos < 320 and ypos >= 0 and ypos < 256 then
-                     fb_addr_write  <= std_logic_vector(to_unsigned((ypos * 320) + xpos, 17));
-                     palette_addr_b <= std_logic_vector(to_unsigned(palindex / 2, 10));
-                     if (palindex mod 2) = 0 then
-                        render_pal_low <= '0';
-                     else
-                        render_pal_low <= '1';
+                  if render_playfield = '1' then
+                     if xpos >= 0 and xpos < 320 and ypos >= 0 and ypos < 256 then
+                        fb_addr_write   <= std_logic_vector(to_unsigned((ypos * 320) + xpos, 17));
+                        raw_color(4 downto 0)   := e90_playfield_level(render_x);
+                        raw_color(9 downto 5)   := e90_playfield_level(render_x);
+                        raw_color(14 downto 10) := e90_playfield_level(render_x);
+                        raw_color(15) := '1';
+                        fb_data_write    <= raw_color;
+                        fb_byteena_write <= "11";
+                        fb_write         <= '1';
                      end if;
-                     render_state <= RENDER_PAL_WAIT;
-                  else
+
                      if render_x = 7 then
                         render_x <= 0;
                         if render_y = 7 then
@@ -685,6 +706,42 @@ begin
                         end if;
                      else
                         render_x <= render_x + 1;
+                     end if;
+                  else
+                     palbank := to_integer(unsigned(render_attr(2 downto 1)));
+                     if render_pos(15 downto 8) = x"BC" then
+                        palbank := palbank + 32;
+                     end if;
+                     palbank  := palbank + (to_integer(unsigned(render_attr(7 downto 6))) * 4);
+                     palindex := (palbank * 16) + PAL_TABLE((render_y * 8) + render_x);
+
+                     if xpos >= 0 and xpos < 320 and ypos >= 0 and ypos < 256 then
+                        fb_addr_write  <= std_logic_vector(to_unsigned((ypos * 320) + xpos, 17));
+                        palette_addr_b <= std_logic_vector(to_unsigned(palindex / 2, 10));
+                        if (palindex mod 2) = 0 then
+                           render_pal_low <= '0';
+                        else
+                           render_pal_low <= '1';
+                        end if;
+                        render_state <= RENDER_PAL_WAIT;
+                     else
+                        if render_x = 7 then
+                           render_x <= 0;
+                           if render_y = 7 then
+                              render_y <= 0;
+                              if render_entry = 511 then
+                                 prev_valid   <= '1';
+                                 render_state <= RENDER_IDLE;
+                              else
+                                 render_entry <= render_entry + 1;
+                                 render_state <= RENDER_ATTR_ADDR;
+                              end if;
+                           else
+                              render_y <= render_y + 1;
+                           end if;
+                        else
+                           render_x <= render_x + 1;
+                        end if;
                      end if;
                   end if;
 
