@@ -1446,12 +1446,27 @@ reg  [39:0] PhaseInc;
 	// Subcarrier generation for external encoders (independent of YC module)
 	reg         subcarrier;
 
-	reg  [39:0] sub_accum;
-	always @(posedge clk_vid) sub_accum <= sub_accum + PhaseInc;
+	// EXP20: run the external encoder reference DDS from the existing fixed
+	// 100 MHz system clock to reduce deterministic edge quantization.
+	// This diagnostic build is NTSC-only and deliberately ignores the
+	// clk_vid-relative PhaseInc override for the external subcarrier output.
+	localparam [39:0] SUBCARRIER_PHASE_INC_100M_NTSC = 40'd39357513496;
 
-	// 1-bit output for positive/negative of wave, no LUT required. Output 1 if disabled for further logic
-	reg subcarrier_out;
-	always @(posedge clk_vid) subcarrier_out <= ~(subcarrier & csync_en & ~ypbpr_en & ~forced_scandoubler & ~vgas_en) | sub_accum[39];
+	reg  [39:0] sub_accum = 40'd0;
+	reg         subcarrier_enable_meta = 1'b0;
+	reg         subcarrier_enable_100m = 1'b0;
+
+	// Synchronize the slowly changing mode enable into the 100 MHz DDS domain.
+	always @(posedge clk_100m) begin
+		subcarrier_enable_meta <= subcarrier & csync_en & ~ypbpr_en & ~forced_scandoubler & ~vgas_en;
+		subcarrier_enable_100m <= subcarrier_enable_meta;
+	end
+
+	always @(posedge clk_100m) sub_accum <= sub_accum + SUBCARRIER_PHASE_INC_100M_NTSC;
+
+	// 1-bit output for positive/negative of wave, no LUT required. Output 1 if disabled for further logic.
+	reg subcarrier_out = 1'b1;
+	always @(posedge clk_100m) subcarrier_out <= ~subcarrier_enable_100m | sub_accum[39];
 
 
 	wire VGA_DISABLE;
