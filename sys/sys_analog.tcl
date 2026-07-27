@@ -45,6 +45,9 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to VGA_EN
 
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_*
+# EXP10: lower only the external encoder subcarrier reference output drive.
+# All RGB and sync pins other than VGA_VS remain at the baseline 8 mA.
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_VS
 
 #============================================================
 # AUDIO
