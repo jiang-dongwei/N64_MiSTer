@@ -113,12 +113,13 @@ jobs:
             echo
             echo "## N64 Quartus build"
             echo
-            echo "- Commit: `${GITHUB_SHA}`"
-            echo "- Container: `${QUARTUS_IMAGE}`"
-            echo "- Quartus exit status: `${{ steps.quartus.outputs.build_status }}`"
-            echo "- Compile time: `${{ steps.quartus.outputs.elapsed_seconds }} seconds`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Container: \`${QUARTUS_IMAGE}\`"
+            echo "- Quartus exit status: \`${{ steps.quartus.outputs.build_status }}\`"
+            echo "- Compile time: \`${{ steps.quartus.outputs.elapsed_seconds }} seconds\`"
             if [[ -f build-artifacts/SHA256SUMS.txt ]]; then
-              echo "- RBF SHA256: `$(cut -d' ' -f1 build-artifacts/SHA256SUMS.txt)`"
+              rbf_sha256=$(cut -d' ' -f1 build-artifacts/SHA256SUMS.txt)
+              echo "- RBF SHA256: \`${rbf_sha256}\`"
             fi
           } >> "${GITHUB_STEP_SUMMARY}"
           df -h | tee build-artifacts/disk-usage-after-build.txt
