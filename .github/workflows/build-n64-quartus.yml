@@ -1,0 +1,134 @@
+name: Build N64 core with Quartus 17.0
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_name:
+        description: Base name for the generated RBF artifact
+        required: true
+        default: N64_EXP20_DDS100M_NTSC
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: n64-quartus-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compile:
+    name: Quartus full compilation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    env:
+      QUARTUS_IMAGE: theypsilon/quartus-lite-c5@sha256:1aafcb629a18a4f595b11f0985a700abecef167e166ae21a23b5faed1ee0ad6d
+      ARTIFACT_BASENAME: ${{ inputs.artifact_name }}
+
+    steps:
+      - name: Check out the exact experiment commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Record runner and tool environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build-artifacts
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "ref=${GITHUB_REF}"
+            echo "commit=${GITHUB_SHA}"
+            echo "runner_os=${RUNNER_OS}"
+            echo "runner_arch=${RUNNER_ARCH}"
+            echo "quartus_image=${QUARTUS_IMAGE}"
+            echo "started_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee build-artifacts/build-metadata.txt
+          echo "Runner resources:"
+          nproc
+          free -h
+          df -h
+          docker pull "${QUARTUS_IMAGE}"
+          docker image inspect "${QUARTUS_IMAGE}" \
+            --format 'image_id={{.Id}} repo_digests={{json .RepoDigests}}' \
+            | tee -a build-artifacts/build-metadata.txt
+          docker run --rm "${QUARTUS_IMAGE}" quartus_sh --version \
+            | tee build-artifacts/quartus-version.txt
+          echo "Disk usage after pulling Quartus:"
+          df -h
+
+      - name: Compile N64.qpf
+        id: quartus
+        shell: bash
+        run: |
+          set -uo pipefail
+          start_epoch=$(date +%s)
+          set +e
+          docker run --rm \
+            --volume "${GITHUB_WORKSPACE}:/build" \
+            --workdir /build \
+            "${QUARTUS_IMAGE}" \
+            /bin/bash -lc \
+            'set -o pipefail; quartus_sh --flow compile N64.qpf 2>&1 | tee quartus-build.log'
+          build_status=$?
+          set -e
+          end_epoch=$(date +%s)
+          elapsed_seconds=$((end_epoch - start_epoch))
+          {
+            echo "build_status=${build_status}"
+            echo "elapsed_seconds=${elapsed_seconds}"
+            echo "finished_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee -a build-artifacts/build-metadata.txt
+          echo "elapsed_seconds=${elapsed_seconds}" >> "${GITHUB_OUTPUT}"
+          echo "build_status=${build_status}" >> "${GITHUB_OUTPUT}"
+          exit "${build_status}"
+
+      - name: Collect RBF and Quartus reports
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          safe_name=$(printf '%s' "${ARTIFACT_BASENAME}" | tr -c 'A-Za-z0-9._-' '_')
+          if [[ -f output_files/N64.rbf ]]; then
+            cp output_files/N64.rbf "build-artifacts/${safe_name}.rbf"
+            sha256sum "build-artifacts/${safe_name}.rbf" \
+              | tee build-artifacts/SHA256SUMS.txt
+          fi
+          for report in \
+            output_files/N64.sta.rpt \
+            output_files/N64.fit.rpt \
+            output_files/N64.map.rpt \
+            output_files/N64.asm.rpt \
+            output_files/N64.flow.rpt
+          do
+            if [[ -f "${report}" ]]; then
+              cp "${report}" build-artifacts/
+            fi
+          done
+          if [[ -f quartus-build.log ]]; then
+            cp quartus-build.log build-artifacts/
+          fi
+          {
+            echo
+            echo "## N64 Quartus build"
+            echo
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Container: \`${QUARTUS_IMAGE}\`"
+            echo "- Quartus exit status: \`${{ steps.quartus.outputs.build_status }}\`"
+            echo "- Compile time: \`${{ steps.quartus.outputs.elapsed_seconds }} seconds\`"
+            if [[ -f build-artifacts/SHA256SUMS.txt ]]; then
+              echo "- RBF SHA256: \`$(cut -d' ' -f1 build-artifacts/SHA256SUMS.txt)\`"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+          df -h | tee build-artifacts/disk-usage-after-build.txt
+
+      - name: Upload RBF, reports, log, and metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}-${{ github.sha }}
+          path: build-artifacts/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
