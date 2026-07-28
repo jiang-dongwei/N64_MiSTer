@@ -1451,6 +1451,10 @@ reg  [39:0] PhaseInc;
 	// This diagnostic build is NTSC-only and deliberately ignores the
 	// clk_vid-relative PhaseInc override for the external subcarrier output.
 	localparam [39:0] SUBCARRIER_PHASE_INC_100M_NTSC = 40'd39357513496;
+	// EXP21: exact half step for the falling-edge sample. Two half steps
+	// preserve the EXP20 average frequency while reducing the edge grid
+	// from 10 ns to 5 ns.
+	localparam [39:0] SUBCARRIER_PHASE_INC_200M_NTSC = 40'd19678756748;
 
 	reg  [39:0] sub_accum = 40'd0;
 	reg         subcarrier_enable_meta = 1'b0;
@@ -1464,9 +1468,38 @@ reg  [39:0] PhaseInc;
 
 	always @(posedge clk_100m) sub_accum <= sub_accum + SUBCARRIER_PHASE_INC_100M_NTSC;
 
-	// 1-bit output for positive/negative of wave, no LUT required. Output 1 if disabled for further logic.
-	reg subcarrier_out = 1'b1;
-	always @(posedge clk_100m) subcarrier_out <= ~subcarrier_enable_100m | sub_accum[39];
+	// Capture two phase samples on each 100 MHz rising edge. ALTDDIO emits
+	// the first sample on the rising edge and the half-step sample on the
+	// falling edge, giving an effective 200 MHz edge-placement grid.
+	wire [39:0] sub_accum_half = sub_accum + SUBCARRIER_PHASE_INC_200M_NTSC;
+	wire        subcarrier_ddr_h = ~subcarrier_enable_100m | sub_accum[39];
+	wire        subcarrier_ddr_l = ~subcarrier_enable_100m | sub_accum_half[39];
+	wire        subcarrier_out;
+
+	altddio_out
+	#(
+		.extend_oe_disable("OFF"),
+		.intended_device_family("Cyclone V"),
+		.invert_output("OFF"),
+		.lpm_hint("UNUSED"),
+		.lpm_type("altddio_out"),
+		.oe_reg("UNREGISTERED"),
+		.power_up_high("OFF"),
+		.width(1)
+	)
+	subcarrier_ddr
+	(
+		.datain_h(subcarrier_ddr_h),
+		.datain_l(subcarrier_ddr_l),
+		.outclock(clk_100m),
+		.dataout(subcarrier_out),
+		.aclr(1'b0),
+		.aset(1'b0),
+		.oe(1'b1),
+		.outclocken(1'b1),
+		.sclr(1'b0),
+		.sset(1'b0)
+	);
 
 
 	wire VGA_DISABLE;
