@@ -1450,7 +1450,7 @@ reg  [39:0] PhaseInc;
 	// 100 MHz system clock to reduce deterministic edge quantization.
 	// This diagnostic build is NTSC-only and deliberately ignores the
 	// clk_vid-relative PhaseInc override for the external subcarrier output.
-	localparam [39:0] SUBCARRIER_PHASE_INC_100M_NTSC = 40'd39357513496;
+	localparam [39:0] SUBCARRIER_PHASE_INC_100M_NTSC = 40'd39357692960;
 
 	reg  [39:0] sub_accum = 40'd0;
 	reg         subcarrier_enable_meta = 1'b0;
