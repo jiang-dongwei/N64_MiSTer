@@ -1474,32 +1474,6 @@ reg  [39:0] PhaseInc;
 	wire [39:0] sub_accum_half = sub_accum + SUBCARRIER_PHASE_INC_200M_NTSC;
 	wire        subcarrier_ddr_h = ~subcarrier_enable_100m | sub_accum[39];
 	wire        subcarrier_ddr_l = ~subcarrier_enable_100m | sub_accum_half[39];
-	wire        subcarrier_out;
-
-	altddio_out
-	#(
-		.extend_oe_disable("OFF"),
-		.intended_device_family("Cyclone V"),
-		.invert_output("OFF"),
-		.lpm_hint("UNUSED"),
-		.lpm_type("altddio_out"),
-		.oe_reg("UNREGISTERED"),
-		.power_up_high("OFF"),
-		.width(1)
-	)
-	subcarrier_ddr
-	(
-		.datain_h(subcarrier_ddr_h),
-		.datain_l(subcarrier_ddr_l),
-		.outclock(clk_100m),
-		.dataout(subcarrier_out),
-		.aclr(1'b0),
-		.aset(1'b0),
-		.oe(1'b1),
-		.outclocken(1'b1),
-		.sclr(1'b0),
-		.sset(1'b0)
-	);
 
 
 	wire VGA_DISABLE;
@@ -1554,7 +1528,36 @@ reg  [39:0] PhaseInc;
 	wire cs1 = vgas_en ? vgas_cs : vga_cs;
 	wire de1 = vgas_en ? vgas_de : vga_de;
 
-	assign VGA_VS = av_dis ? 1'bZ      :(((vgas_en ? (~vgas_vs ^ VS[12])                         : VGA_DISABLE ? 1'd1 : ~vga_vs) | csync_en) & subcarrier_out);
+	// Cyclone V DDIO outputs must directly drive an I/O buffer. Fold the
+	// original VGA_VS logic into both half-cycle samples, then let this DDIO
+	// instance drive the physical VGA_VS pin without intervening logic.
+	wire vga_vs_base = (vgas_en ? (~vgas_vs ^ VS[12]) : VGA_DISABLE ? 1'd1 : ~vga_vs) | csync_en;
+
+	altddio_out
+	#(
+		.extend_oe_disable("OFF"),
+		.intended_device_family("Cyclone V"),
+		.invert_output("OFF"),
+		.lpm_hint("UNUSED"),
+		.lpm_type("altddio_out"),
+		.oe_reg("UNREGISTERED"),
+		.power_up_high("OFF"),
+		.width(1)
+	)
+	subcarrier_ddr
+	(
+		.datain_h(vga_vs_base & subcarrier_ddr_h),
+		.datain_l(vga_vs_base & subcarrier_ddr_l),
+		.outclock(clk_100m),
+		.dataout(VGA_VS),
+		.aclr(1'b0),
+		.aset(1'b0),
+		.oe(~av_dis),
+		.outclocken(1'b1),
+		.sclr(1'b0),
+		.sset(1'b0)
+	);
+
 	assign VGA_HS = av_dis ? 1'bZ      :  (vgas_en ? ((csync_en ? ~vgas_cs : ~vgas_hs) ^ HS[12]) : VGA_DISABLE ? 1'd1 : (csync_en ? ~vga_cs : ~vga_hs));
 	assign VGA_R  = av_dis ? 6'bZZZZZZ :   vgas_en ? vgas_o[23:18]                               : VGA_DISABLE ? 6'd0 : vga_o[23:18];
 	assign VGA_G  = av_dis ? 6'bZZZZZZ :   vgas_en ? vgas_o[15:10]                               : VGA_DISABLE ? 6'd0 : vga_o[15:10];
