@@ -1466,13 +1466,12 @@ reg  [39:0] PhaseInc;
 		subcarrier_enable_100m <= subcarrier_enable_meta;
 	end
 
-	// EXP21-G1: keep the 40-bit DDS quiet while the external subcarrier is
-	// disabled (for example, in RGB mode). Restart from phase zero when the
-	// mode is enabled; the active subcarrier sequence and DDR half step stay
-	// unchanged after startup.
+	// EXP21-G1-HOLD: keep the 40-bit DDS quiet while the external subcarrier
+	// is disabled (for example, in RGB mode). Holding the accumulator maps to
+	// register-enable semantics and avoids the extra 40-bit synchronous-zero
+	// data path that caused severe timing regressions in the first G1 build.
 	always @(posedge clk_100m) begin
 		if(subcarrier_enable_100m) sub_accum <= sub_accum + SUBCARRIER_PHASE_INC_100M_NTSC;
-		else                       sub_accum <= 40'd0;
 	end
 
 	// Capture two phase samples on each 100 MHz rising edge. ALTDDIO emits
