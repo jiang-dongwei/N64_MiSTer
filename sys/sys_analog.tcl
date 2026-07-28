@@ -46,6 +46,10 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to VGA_EN
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_*
 
+# EXP11: keep the baseline 8 mA drive and slow only the external encoder
+# subcarrier reference output. The Fitter report must confirm this override.
+set_instance_assignment -name SLEW_RATE 0 -to VGA_VS
+
 #============================================================
 # AUDIO
 #============================================================
