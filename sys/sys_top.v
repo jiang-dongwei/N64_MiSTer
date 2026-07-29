@@ -1446,34 +1446,19 @@ reg  [39:0] PhaseInc;
 	// Subcarrier generation for external encoders (independent of YC module)
 	reg         subcarrier;
 
-	// EXP20: run the external encoder reference DDS from the existing fixed
-	// 100 MHz system clock to reduce deterministic edge quantization.
-	// This diagnostic build is NTSC-only and deliberately ignores the
-	// clk_vid-relative PhaseInc override for the external subcarrier output.
-	localparam [39:0] SUBCARRIER_PHASE_INC_100M_NTSC = 40'd39357513496;
-	// EXP21: exact half step for the falling-edge sample. Two half steps
-	// preserve the EXP20 average frequency while reducing the edge grid
-	// from 10 ns to 5 ns.
-	localparam [39:0] SUBCARRIER_PHASE_INC_200M_NTSC = 40'd19678756748;
-
+	// EXP22: keep the DDS phase locked to clk_vid and the runtime PhaseInc
+	// supplied by Main, but emit a second sample half a video-clock later.
+	// This preserves the original line/frame phase relationship while reducing
+	// the output edge grid from one clk_vid period to half a clk_vid period.
 	reg  [39:0] sub_accum = 40'd0;
-	reg         subcarrier_enable_meta = 1'b0;
-	reg         subcarrier_enable_100m = 1'b0;
+	always @(posedge clk_vid) sub_accum <= sub_accum + PhaseInc;
 
-	// Synchronize the slowly changing mode enable into the 100 MHz DDS domain.
-	always @(posedge clk_100m) begin
-		subcarrier_enable_meta <= subcarrier & csync_en & ~ypbpr_en & ~forced_scandoubler & ~vgas_en;
-		subcarrier_enable_100m <= subcarrier_enable_meta;
-	end
-
-	always @(posedge clk_100m) sub_accum <= sub_accum + SUBCARRIER_PHASE_INC_100M_NTSC;
-
-	// Capture two phase samples on each 100 MHz rising edge. ALTDDIO emits
-	// the first sample on the rising edge and the half-step sample on the
-	// falling edge, giving an effective 200 MHz edge-placement grid.
-	wire [39:0] sub_accum_half = sub_accum + SUBCARRIER_PHASE_INC_200M_NTSC;
-	wire        subcarrier_ddr_h = ~subcarrier_enable_100m | sub_accum[39];
-	wire        subcarrier_ddr_l = ~subcarrier_enable_100m | sub_accum_half[39];
+	// All distributed N64 PhaseInc values are even, so the half-step is exact.
+	// For a custom odd value, truncation is below one 40-bit DDS LSB.
+	wire [39:0] sub_accum_half = sub_accum + (PhaseInc >> 1);
+	wire        subcarrier_enable_vid = subcarrier & csync_en & ~ypbpr_en & ~forced_scandoubler & ~vgas_en;
+	wire        subcarrier_ddr_h = ~subcarrier_enable_vid | sub_accum[39];
+	wire        subcarrier_ddr_l = ~subcarrier_enable_vid | sub_accum_half[39];
 
 
 	wire VGA_DISABLE;
@@ -1548,7 +1533,7 @@ reg  [39:0] PhaseInc;
 	(
 		.datain_h(vga_vs_base & subcarrier_ddr_h),
 		.datain_l(vga_vs_base & subcarrier_ddr_l),
-		.outclock(clk_100m),
+		.outclock(clk_vid),
 		.dataout(VGA_VS),
 		.aclr(1'b0),
 		.aset(1'b0),
