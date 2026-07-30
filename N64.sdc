@@ -15,3 +15,11 @@ set_false_path -from [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|c
 set_false_path -from [get_clocks {emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -to [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}]
 
 set_false_path -from [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}] -to [get_clocks {pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}]
+
+# EXP23: clk_subcarrier_2x is generated from clk_vid. The existing design
+# already treats clk_sys/clk_hdmi configuration paths into clk_vid as
+# asynchronous. Apply the same CDC boundary to the new descendant clock;
+# paths launched by clk_vid and paths wholly inside clk_subcarrier_2x remain
+# timed normally.
+set_false_path -from [get_clocks {emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -to [get_clocks {subcarrier_clock|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}]
+set_false_path -from [get_clocks {pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}] -to [get_clocks {subcarrier_clock|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}]
