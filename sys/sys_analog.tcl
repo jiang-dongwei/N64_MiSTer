@@ -45,6 +45,9 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to VGA_EN
 
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_*
+# EXP24/S25: lower only the external Sony encoder subcarrier reference drive.
+# RGB, HS and every other VGA pin remain at the EXP22 baseline of 8 mA.
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_VS
 
 #============================================================
 # AUDIO
